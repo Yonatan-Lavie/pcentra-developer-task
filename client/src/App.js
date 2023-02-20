@@ -58,29 +58,33 @@ function App() {
   const fetchStations = async (attributes) => {
     navigator.geolocation.getCurrentPosition(success, error, options);
     // arranging params for request
-    const params = {
-      attributes: attributes,
+    let params = {
       lat: location.coords.lat,
       lon: location.coords.lon,
       radius: 5000,
     };
 
-    const respons = await axios.get(
-      'https://ravkavonline.co.il/api/pos/service-station/search/',
-      {
-        params: params,
-      }
-    );
+    params = { ...params, ...attributes };
+    console.log(params);
 
+    const respons = await axios.get('http://localhost:8080/api/search/', {
+      params: params,
+    });
+
+    console.log(respons.data.results);
     // update results with respons
-    setResults(respons.data.data.results);
+    setResults(respons.data.results);
   };
   // handle form submition
   const onSubmit = (data) => {
     // convert form attributs from object to array with only the true attributs
-    var attributes = Object.keys(data)
-      .map((key) => (data[key] === false ? null : key))
-      .filter((attr) => attr !== null);
+    const attributes = Object.entries(data)
+      // eslint-disable-next-line no-unused-vars
+      .filter(([key, value]) => value === true)
+      .reduce((obj, [key, value]) => {
+        obj[key] = value;
+        return obj;
+      }, {});
 
     fetchStations(attributes);
   };
@@ -97,7 +101,11 @@ function App() {
     };
     return results.map((item, key) => (
       <div key={key} className="result-item">
+        <p>{'מטר ' + item.distance}</p>
         <p>{item.service_station.comments}</p>
+        {item.service_station.attributes.map((item, key) => {
+          return <div key={'attribute-' + key}>{item}</div>;
+        })}
         <p>
           {renderAddress(
             item.service_station.address,
@@ -116,10 +124,6 @@ function App() {
       </div>
       <div className="col">
         <form className="form-wrapper" onSubmit={handleSubmit(onSubmit)}>
-          <div className="form-item">
-            <input type="checkbox" {...register('accepts_credit_card')} />
-            <label htmlFor="accepts_credit_card">Accepts Credit Card</label>
-          </div>
           <div className="form-item">
             <input type="checkbox" {...register('accepts_credit_card')} />
             <label htmlFor="accepts_credit_card">Accepts Credit Card</label>
